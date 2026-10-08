@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Factory Knowledge Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --k: #0a0a0a; --w: #fff; --g: #d9d9d9; --muted: #3a3a3a;
+    --display: "Dela Gothic One", Impact, "Arial Black", sans-serif;
+    --body: "Zen Kaku Gothic New", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--k); font-family: var(--body); font-weight: 500; line-height: 1.6; background: var(--w);
+    display: grid; grid-template-columns: 250px 1fr; min-height: 100vh;
+  }
+  body::before { /* screentone */
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(circle, rgba(0,0,0,.22) 1px, transparent 1.4px) 0 0 / 7px 7px;
+    -webkit-mask-image: linear-gradient(115deg, #000 0%, transparent 38%, transparent 70%, #000 100%);
+    mask-image: linear-gradient(115deg, #000 0%, transparent 38%, transparent 70%, #000 100%);
+  }
+  .sidebar, main { position: relative; z-index: 1; }
+
+  /* ---------- Side navigation ---------- */
+  .sidebar { background: var(--k); color: var(--w); padding: 22px 16px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; border-right: 6px solid var(--k); overflow: hidden; }
+  .sidebar::after { /* ink streaks */
+    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background: repeating-linear-gradient(100deg, transparent 0 18px, rgba(255,255,255,.07) 18px 20px);
+  }
+  .sidebar > * { position: relative; z-index: 1; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .frame { width: 56px; height: 56px; border-radius: 50%; background: var(--w); border: 3px solid var(--w); flex: none; }
+  .brand svg { width: 100%; height: 100%; display: block; }
+  .brand b { display: block; font-family: var(--display); font-size: 1.15rem; line-height: 1.15; }
+  .brand small { color: #bdbdbd; font-size: .75rem; }
+  .nav { display: flex; flex-direction: column; gap: 8px; }
+  .nav button { font: inherit; font-weight: 900; text-align: left; color: var(--w); background: transparent; cursor: pointer; border: 2px solid #4a4a4a; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%); }
+  .nav button span[lang] { font-size: .8rem; opacity: .7; font-weight: 700; }
+  .nav button:hover { border-color: var(--w); }
+  .nav button[aria-current="page"] { background: var(--w); color: var(--k); border-color: var(--w); }
+  .nav button[aria-current="page"] span[lang] { opacity: 1; }
+  .vert { writing-mode: vertical-rl; font-family: var(--display); font-size: 2.2rem; letter-spacing: .25em; color: transparent; -webkit-text-stroke: 1.5px #777; margin: 0 auto; user-select: none; }
+  .status { margin-top: auto; font-size: .85rem; color: #bdbdbd; display: flex; align-items: center; gap: 8px; }
+  .status i { width: 12px; height: 12px; border: 2px solid var(--w); display: inline-block; transform: rotate(45deg); }
+  .status.ok i { background: var(--w); }
+
+  /* ---------- Main ---------- */
+  main { padding: 26px 34px 0; min-width: 0; display: flex; flex-direction: column; }
+  .view { display: flex; flex-direction: column; flex: 1; max-width: 880px; width: 100%; margin: 0 auto; }
+  .view[hidden] { display: none; }
+  .page-head { position: relative; padding: 6px 0 18px; border-bottom: 6px solid var(--k); margin-bottom: 18px; isolation: isolate; }
+  .page-head::before { /* speed-line burst */
+    content: ""; position: absolute; right: -30px; top: -40px; width: 340px; height: 220px; z-index: -1; opacity: .16;
+    background: repeating-conic-gradient(from 0deg at 70% 50%, var(--k) 0 1.5deg, transparent 1.5deg 6deg);
+    -webkit-mask-image: radial-gradient(ellipse at 70% 50%, transparent 8%, #000 70%); mask-image: radial-gradient(ellipse at 70% 50%, transparent 8%, #000 70%);
+  }
+  .tag { display: inline-block; background: var(--k); color: var(--w); font-weight: 900; font-size: .8rem; letter-spacing: .12em; padding: 1px 14px; transform: rotate(-2deg); }
+  h1 { font-family: var(--display); font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1.1; margin: 10px 0 6px; text-shadow: 3px 3px 0 var(--g); }
+  .sub { margin: 0; color: var(--muted); max-width: 58ch; font-weight: 700; }
+  .sfx { position: absolute; right: 6px; top: -2px; font-family: var(--display); font-size: 2.6rem; color: var(--w); -webkit-text-stroke: 2px var(--k); transform: rotate(-7deg); letter-spacing: .05em; user-select: none; }
+
+  .card { background: var(--w); border: 4px solid var(--k); box-shadow: 6px 6px 0 var(--k); padding: 16px 20px; }
+  button.go { font: inherit; font-weight: 900; letter-spacing: .06em; color: var(--k); background: var(--w); cursor: pointer; border: 3px solid var(--k); padding: 10px 24px; box-shadow: 4px 4px 0 var(--k); transition: transform .08s, box-shadow .08s; }
+  button.go:hover:not(:disabled) { background: var(--k); color: var(--w); transform: translate(-1px,-1px); box-shadow: 6px 6px 0 var(--k); }
+  button.go:active:not(:disabled) { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--k); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid var(--k); outline-offset: 3px; }
+  .sidebar :focus-visible { outline-color: var(--w); }
+
+  /* ---------- Chat ---------- */
+  #chat { display: flex; flex-direction: column; gap: 20px; padding: 8px 0 24px; flex: 1; }
+  .msg { display: flex; gap: 12px; align-items: flex-start; }
+  .msg.user { justify-content: flex-end; }
+  .avatar { width: 62px; height: 62px; flex: none; border: 3px solid var(--k); border-radius: 50%; background: var(--w); }
+  .bubble { background: var(--w); border: 3px solid var(--k); box-shadow: 5px 5px 0 var(--k); padding: 12px 16px; max-width: min(650px, 100%); min-width: 0; overflow-wrap: anywhere; position: relative; }
+  .msg.bot .bubble::before { content: ""; position: absolute; left: -13px; top: 16px; border: 9px solid transparent; border-right: 10px solid var(--k); }
+  .msg.user .bubble { background: var(--k); color: var(--w); font-weight: 900; box-shadow: 5px 5px 0 var(--g); border-color: var(--k); }
+  .bubble.unsure { border-style: dashed; background: repeating-linear-gradient(45deg, #fff 0 6px, #ececec 6px 7px); }
+  .answer { margin: 0; white-space: pre-wrap; }
+  .dots span { display: inline-block; width: 9px; height: 9px; margin-left: 5px; background: var(--k); transform: rotate(45deg); animation: pulse .9s infinite; }
+  .dots span:nth-child(2) { animation-delay: .15s; } .dots span:nth-child(3) { animation-delay: .3s; }
+  @keyframes pulse { 50% { transform: rotate(45deg) scale(.4); } }
+  .src-title { margin: 14px 0 6px; font-weight: 900; font-size: .8rem; letter-spacing: .14em; border-bottom: 3px solid var(--k); }
+  details.src { border: 2px solid var(--k); margin-top: 7px; padding: 5px 10px; background: var(--w); }
+  details.src[open] { background: #f1f1f1; }
+  details.src summary { cursor: pointer; font-weight: 900; font-size: .9rem; }
+  .score { font-weight: 700; font-size: .78rem; color: var(--muted); }
+  .bar { height: 10px; border: 2px solid var(--k); margin-top: 6px; background: var(--w); }
+  .bar div { height: 100%; background: repeating-linear-gradient(45deg, var(--k) 0 3px, var(--w) 3px 6px); border-right: 2px solid var(--k); }
+  .snippet { margin: 8px 0 4px; font-size: .88rem; color: var(--muted); white-space: pre-wrap; }
+
+  .composer { position: sticky; bottom: 0; padding: 12px 0 20px; background: linear-gradient(to top, #fff 75%, transparent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .chip { font: inherit; font-size: .82rem; font-weight: 900; cursor: pointer; background: var(--w); color: var(--k); border: 2px solid var(--k); padding: 2px 12px; transform: skewX(-8deg); }
+  .chip:hover { background: var(--k); color: var(--w); }
+  .row { display: flex; gap: 12px; align-items: flex-end; }
+  textarea { flex: 1; font: inherit; color: var(--k); background: var(--w); border: 4px solid var(--k); padding: 10px 14px; min-height: 52px; max-height: 160px; resize: vertical; }
+
+  /* ---------- Other views ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 22px; margin: 6px 0 24px; }
+  .num { display: inline-grid; place-items: center; width: 40px; height: 40px; background: var(--k); color: var(--w); font-family: var(--display); transform: rotate(-4deg); }
+  .card h2 { font-family: var(--display); font-size: 1.05rem; margin: 10px 0 4px; }
+  .card p { margin: 0; color: var(--muted); font-size: .92rem; }
+  .out { margin-top: 12px; font-weight: 900; min-height: 1.5em; color: var(--k) !important; }
+
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 12px; gap: 10px; }
+    .nav { flex-direction: row; flex: 1; gap: 6px; }
+    .nav button { padding: 8px 12px; font-size: .85rem; clip-path: none; } .nav button span[lang] { display: none; }
+    .brand small, .status, .vert, .sfx { display: none; }
+    main { padding: 18px 14px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mascot" viewBox="0 0 120 120">
+    <path d="M8 120 C8 52 30 12 60 12 C90 12 112 52 112 120 Z" fill="#0a0a0a"/>
+    <path d="M30 52 H90 V84 C90 100 76 110 60 110 C44 110 30 100 30 84 Z" fill="#fff" stroke="#0a0a0a" stroke-width="3"/>
+    <path d="M24 48 C24 28 40 20 60 20 C80 20 96 28 96 48 Z" fill="#fff" stroke="#0a0a0a" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="18" y="46" width="84" height="9" rx="3" fill="#fff" stroke="#0a0a0a" stroke-width="4"/>
+    <path d="M54 22 V46 M66 22 V46" stroke="#0a0a0a" stroke-width="3"/>
+    <polygon points="35,70 55,76 53,85 35,81" fill="#0a0a0a"/><polygon points="85,70 65,76 67,85 85,81" fill="#0a0a0a"/>
+    <circle cx="48" cy="79" r="2.2" fill="#fff"/><circle cx="72" cy="79" r="2.2" fill="#fff"/>
+    <path d="M51 98 H69 M69 98 L72 94" stroke="#0a0a0a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <path d="M80 88 L90 98 M90 88 L80 98" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="frame"><svg aria-hidden="true"><use href="#mascot"/></svg></div>
+    <div><b>KŌJŌ</b><small>Factory Knowledge Assistant</small></div>
+  </div>
+  <nav class="nav" aria-label="Main">
+    <button data-view="ask" aria-current="page">Ask <span lang="ja">質問</span></button>
+    <button data-view="how">How it works <span lang="ja">仕組み</span></button>
+    <button data-view="admin">Control room <span lang="ja">管理室</span></button>
+  </nav>
+  <div class="vert" lang="ja" aria-hidden="true">工場知識</div>
+  <div class="status" id="status"><i></i><span>Checking server…</span></div>
+</aside>
+
+<main>
+  <!-- ASK -->
+  <section class="view" id="view-ask">
+    <div class="page-head">
+      <span class="tag">CH.01 <span lang="ja">質問</span></span>
+      <h1>Factory Knowledge Assistant</h1>
+      <p class="sub">Machine, safety and quality knowledge that grounded in verified documentation.</p>
+      <span class="sfx" lang="ja" aria-hidden="true">ゴゴゴ</span>
+    </div>
+    <div id="chat" aria-live="polite">
+      <div class="msg bot">
+        <svg class="avatar" aria-hidden="true"><use href="#mascot"/></svg>
+        <div class="bubble"><p class="answer">Ask about machines, procedures, safety requirements or quality standards. Answers are grounded in the available documentation and include supporting sources. If sufficient evidence is not found, the system will not guess.</p></div>
+      </div>
+    </div>
+    <form class="composer" id="form">
+      <div class="chips">
+        <button type="button" class="chip" data-q="What does error E101 mean on the CNC mill?">Error E101</button>
+        <button type="button" class="chip" data-q="How do I verify zero energy during lockout?">Verify zero energy</button>
+        <button type="button" class="chip" data-q="What is the speed limit for forklifts in pedestrian zones?">Forklift speed</button>
+        <button type="button" class="chip" data-q="How long should a Line 3 changeover take?">Line 3 changeover</button>
+      </div>
+      <div class="row">
+        <textarea id="question" rows="1" aria-label="Your question" placeholder="Ask about a machine, procedure or safety requirement"></textarea>
+        <button class="go" id="askBtn" type="submit">ASK</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="view" id="view-how" hidden>
+    <div class="page-head">
+      <span class="tag">CH.02 <span lang="ja">仕組み</span></span>
+      <h1>How it works</h1>
+      <p class="sub">This is RAG: retrieval-augmented generation. The AI answers from your documents, not from memory.</p>
+      <span class="sfx" lang="ja" aria-hidden="true">ドン</span>
+    </div>
+    <div class="grid">
+      <div class="card"><span class="num">1</span><h2>Chunk</h2><p>Documents are cut into small pieces so the right paragraph can be found.</p></div>
+      <div class="card"><span class="num">2</span><h2>Embed</h2><p>A Hugging Face model turns each piece into numbers that capture its meaning.</p></div>
+      <div class="card"><span class="num">3</span><h2>Retrieve</h2><p>Your question is embedded too, and the closest pieces are picked by similarity.</p></div>
+      <div class="card"><span class="num">4</span><h2>Answer</h2><p>Gemini writes the answer using only those pieces and cites them as [1], [2].</p></div>
+    </div>
+    <div class="card"><h2>Why "I could not find this"?</h2><p>If even the best piece is a weak match, the app skips the AI and says so. That stops made-up answers about safety procedures.</p></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section class="view" id="view-admin" hidden>
+    <div class="page-head">
+      <span class="tag">CH.03 <span lang="ja">管理室</span></span>
+      <h1>Control room</h1>
+      <p class="sub">Check the server and rebuild the index after you add or change documents.</p>
+      <span class="sfx" lang="ja" aria-hidden="true">ズズズ</span>
+    </div>
+    <div class="grid">
+      <div class="card"><h2>Server status</h2><p>Checks that the API is running.</p><p class="out" id="healthOut"></p><br /><button class="go" id="healthBtn" type="button">CHECK</button></div>
+      <div class="card"><h2>Rebuild index</h2><p>Reads everything in data/docs again. Takes a few seconds.</p><p class="out" id="reindexOut"></p><br /><button class="go" id="reindexBtn" type="button">REBUILD</button></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  let busy = false;
+
+  // ----- Navigation -----
+  function showView(name) {
+    $$(".view").forEach((v) => (v.hidden = v.id !== "view-" + name));
+    $$(".nav button").forEach((b) => b.dataset.view === name ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+    window.scrollTo(0, 0);
+  }
+  $$(".nav button").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+
+  // ----- Chat -----
+  function mascot() {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg"); svg.setAttribute("class", "avatar"); svg.setAttribute("aria-hidden", "true");
+    const use = document.createElementNS(ns, "use"); use.setAttribute("href", "#mascot"); svg.appendChild(use);
+    return svg;
+  }
+  function addUser(text) {
+    const row = make("div", "msg user"); row.appendChild(make("div", "bubble", text));
+    $("#chat").appendChild(row); row.scrollIntoView({ block: "end" });
+  }
+  function addBot() {
+    const row = make("div", "msg bot"); const bubble = make("div", "bubble");
+    row.append(mascot(), bubble); $("#chat").appendChild(row);
+    return bubble;
+  }
+  function setLoading(bubble) {
+    bubble.replaceChildren();
+    const p = make("p", "answer dots", "Searching the documents");
+    for (let i = 0; i < 3; i++) p.appendChild(make("span"));
+    bubble.appendChild(p); bubble.scrollIntoView({ block: "end" });
+  }
+  function fill(bubble, data) {
+    bubble.replaceChildren(); bubble.classList.toggle("unsure", !data.answered);
+    bubble.appendChild(make("p", "answer", data.answer));
+    if (data.sources && data.sources.length) {
+      bubble.appendChild(make("p", "src-title", data.answered ? "EVIDENCE" : "CLOSEST MATCHES (LOW RELEVANCE)"));
+      data.sources.forEach((s, i) => {
+        const d = make("details", "src"); const sum = make("summary", "", `[${i + 1}] ${s.source}${s.page ? ", page " + s.page : ""} `);
+        sum.appendChild(make("span", "score", `relevance ${s.score}`));
+        const bar = make("div", "bar"); const f = document.createElement("div"); f.style.width = Math.max(0, Math.min(100, s.score * 100)) + "%"; bar.appendChild(f);
+        d.append(sum, bar, make("p", "snippet", s.text)); bubble.appendChild(d);
+      });
+    }
+    bubble.scrollIntoView({ block: "end" });
+  }
+  async function ask(question) {
+    if (busy || question.length < 3) return;
+    busy = true; $("#askBtn").disabled = true;
+    addUser(question); $("#question").value = "";
+    const bubble = addBot(); setLoading(bubble);
+    try {
+      const res = await fetch("/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Something went wrong.");
+      fill(bubble, data);
+    } catch (e) {
+      bubble.replaceChildren(make("p", "answer", "Error: " + (e.message || "Something went wrong."))); bubble.classList.add("unsure");
+    } finally { busy = false; $("#askBtn").disabled = false; $("#question").focus(); }
+  }
+  $("#form").addEventListener("submit", (e) => { e.preventDefault(); ask($("#question").value.trim()); });
+  $("#question").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask($("#question").value.trim()); } });
+  $$(".chip").forEach((c) => c.addEventListener("click", () => ask(c.dataset.q)));
+
+  // ----- Control room -----
+  async function checkHealth() {
+    const pill = $("#status"), out = $("#healthOut");
+    try {
+      const res = await fetch("/health"); const d = await res.json();
+      pill.className = "status ok"; pill.lastChild.textContent = "Server online";
+      out.textContent = `Online. Model: ${d.model}`;
+    } catch { pill.className = "status bad"; pill.lastChild.textContent = "Server offline"; out.textContent = "Offline. Is uvicorn running?"; }
+  }
+  $("#healthBtn").addEventListener("click", checkHealth);
+  $("#reindexBtn").addEventListener("click", async () => {
+    const btn = $("#reindexBtn"), out = $("#reindexOut"); btn.disabled = true; out.textContent = "Rebuilding…";
+    try {
+      const res = await fetch("/reindex", { method: "POST" }); const d = await res.json();
+      if (!res.ok) throw new Error(d.detail || "Failed.");
+      out.textContent = `Done. ${d.chunks_indexed} chunks indexed.`;
+    } catch (e) { out.textContent = "Error: " + e.message; } finally { btn.disabled = false; }
+  });
+  checkHealth();
+</script>
+</body>
+</html>

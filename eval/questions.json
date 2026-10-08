@@ -1,0 +1,15 @@
+[
+  {"question": "What does error E101 mean on the CNC mill?", "expected_source": "cnc_mill_troubleshooting.md"},
+  {"question": "What should I do if the tool changer fails?", "expected_source": "cnc_mill_troubleshooting.md"},
+  {"question": "The machine is chattering while cutting, what should I adjust?", "expected_source": "cnc_mill_troubleshooting.md"},
+  {"question": "How do I verify zero energy during lockout?", "expected_source": "lockout_tagout_procedure.md"},
+  {"question": "Who is allowed to remove a lock after lockout?", "expected_source": "lockout_tagout_procedure.md"},
+  {"question": "What is the speed limit for forklifts in pedestrian zones?", "expected_source": "forklift_safety.md"},
+  {"question": "How do I park a forklift?", "expected_source": "forklift_safety.md"},
+  {"question": "How long should a Line 3 changeover take?", "expected_source": "packaging_line3_changeover.md"},
+  {"question": "Which test wands are used for the metal detector check?", "expected_source": "packaging_line3_changeover.md"},
+  {"question": "How often must gauges be calibrated?", "expected_source": "quality_inspection.md"},
+  {"question": "What do I do with product that fails inspection?", "expected_source": "quality_inspection.md"},
+  {"question": "What is the capital of France?", "expected_source": null},
+  {"question": "What is the best topping for a pizza?", "expected_source": null}
+]
